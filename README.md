@@ -1,4 +1,4 @@
-# MarketScope AI
+# VC Pitch Simulator
 
 A hobby project built during my **Investor Analyst Fellowship at McMaster**. It combines a VC pitch simulator (primary focus) with an AI-powered market sizing tool.
 
