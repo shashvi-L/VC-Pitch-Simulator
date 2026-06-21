@@ -1,0 +1,8 @@
+.env
+venv/
+__pycache__/
+*.pyc
+temp_*
+*.webm
+Sprint_ai_new_pitch.zip
+Sprint_ai_new_pitch/

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Market Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<div class="w-full max-w-3xl mx-auto mt-6 flex justify-end">
+    <a href="/simulator" class="group relative inline-flex items-center justify-center px-6 py-3 font-bold text-white bg-purple-600 rounded-xl shadow-md hover:bg-purple-700 hover:shadow-lg transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+        <span class="mr-2">Try the VC Pitch Simulator</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+    </a>
+</div>
+<body class="bg-slate-50 min-h-screen py-10 px-4 font-sans text-slate-900">
+
+    <div class="max-w-4xl mx-auto space-y-8">
+        
+        <div class="text-center space-y-2">
+            <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Market<span class="text-blue-600">Scope</span> AI</h1>
+            <p class="text-slate-500">Professional TAM/SAM/SOM & Competitive Analysis</p>
+        </div>
+
+        <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <div class="col-span-full">
+                    <label class="block text-sm font-semibold mb-2">Startup Idea</label>
+                    <textarea id="idea" rows="2" class="w-full p-3 bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. AI-powered drone for inspecting wind turbines"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Target Market (SAM Location)</label>
+                    <select id="country" class="w-full p-3 bg-slate-50 border rounded-lg outline-none">
+                        <option value="United States">United States</option>
+                        <option value="United Kingdom">United Kingdom</option>
+                        <option value="Canada">Canada</option>
+                        <option value="India">India</option>
+                        <option value="Germany">Germany</option>
+                        <option value="Global">Global (Entire World)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Methodology</label>
+                    <select id="methodology" onchange="toggleMethodology()" class="w-full p-3 bg-slate-50 border rounded-lg outline-none">
+                        <option value="top-down">Top-Down (Macro Data)</option>
+                        <option value="bottom-up">Bottom-Up (Unit Economics)</option>
+                    </select>
+                </div>
+
+                <div id="bottomUpFields" class="col-span-full grid grid-cols-2 gap-6 hidden p-4 bg-blue-50 rounded-xl border border-blue-100">
+                    <div>
+                        <label class="block text-sm font-semibold text-blue-900 mb-2">Price Per Unit ($)</label>
+                        <input id="price" type="number" placeholder="e.g. 100" class="w-full p-3 bg-white border rounded-lg outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-blue-900 mb-2">Purchase Frequency</label>
+                        <select id="frequency" class="w-full p-3 bg-white border rounded-lg outline-none">
+                            <option value="1">Once per year</option>
+                            <option value="12">Monthly (12x/year)</option>
+                            <option value="0.2">Every 5 years (0.2x/year)</option>
+                            <option value="0.1">Once in a lifetime</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <button onclick="generateReport()" id="btn" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-blue-200">
+                Generate Market Report
+            </button>
+        </div>
+
+        <div id="results" class="hidden space-y-6">
+            
+            <details class="bg-slate-900 text-slate-300 p-4 rounded-xl font-mono text-xs overflow-hidden">
+                <summary class="cursor-pointer font-bold text-blue-400 hover:text-blue-300 select-none">
+                    > View AI Reasoning & Sources
+                </summary>
+                <div id="thinkingLog" class="mt-4 space-y-2 pl-4 border-l-2 border-slate-700 whitespace-pre-wrap">
+                    </div>
+            </details>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-6 rounded-xl shadow border border-slate-100 text-center">
+                    <div class="text-sm font-bold text-slate-400 uppercase tracking-wider">TAM (Global)</div>
+                    <div id="tam" class="text-3xl font-extrabold text-slate-900 mt-2">--</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow border border-slate-100 text-center">
+                    <div class="text-sm font-bold text-blue-600 uppercase tracking-wider">SAM (<span id="samLoc">Target</span>)</div>
+                    <div id="sam" class="text-3xl font-extrabold text-blue-600 mt-2">--</div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow border border-slate-100 text-center">
+                    <div class="text-sm font-bold text-green-600 uppercase tracking-wider">SOM (Obtainable)</div>
+                    <div id="som" class="text-3xl font-extrabold text-green-600 mt-2">--</div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-6 rounded-xl shadow border border-slate-800 text-white">
+                <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                    <i class="ph ph-reddit-logo text-[#FF4500]"></i> Community Sentiment Scores
+                </h3>
+                
+                <div id="redditGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="text-slate-500 text-sm animate-pulse">Awaiting community data...</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow border border-slate-100">
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                        <i class="ph ph-users"></i> Key Competitors
+                    </h3>
+                    <ul id="competitorsList" class="space-y-3 text-sm text-slate-600"></ul>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow border border-slate-100">
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+                        <i class="ph ph-trend-up"></i> Market Trends & IP
+                    </h3>
+                    <div class="mb-4">
+                        <span class="font-semibold text-slate-700">CAGR:</span>
+                        <span id="cagr" class="text-slate-900 font-bold ml-2">--</span>
+                    </div>
+                    <h4 class="font-semibold text-xs uppercase text-slate-400 mb-2">Relevant Patents / Papers</h4>
+                    <ul id="patentsList" class="space-y-3 text-sm text-slate-600"></ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Shows or hides the Price/Frequency inputs based on dropdown selection
+        function toggleMethodology() {
+            const method = document.getElementById('methodology').value;
+            const fields = document.getElementById('bottomUpFields');
+            if (method === 'bottom-up') {
+                fields.classList.remove('hidden');
+            } else {
+                fields.classList.add('hidden');
+            }
+        }
+
+        // The main engine that talks to your Python backend
+        async function generateReport() {
+            const btn = document.getElementById('btn');
+            const results = document.getElementById('results');
+            
+            // Set Loading UI
+            btn.innerText = "Analyzing Market Data (This may take 30s)...";
+            btn.disabled = true;
+            results.classList.add('hidden');
+
+            // Gather inputs
+            const payload = {
+                idea: document.getElementById('idea').value,
+                country: document.getElementById('country').value,
+                methodology: document.getElementById('methodology').value,
+                price: parseFloat(document.getElementById('price').value) || 0,
+                frequency: parseFloat(document.getElementById('frequency').value) || 1
+            };
+
+            try {
+                // Fetch data from Python
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert("Error from server: " + data.error);
+                    return;
+                }
+
+                // 1. Populate Basic Texts
+                document.getElementById('tam').innerText = data.tam;
+                document.getElementById('sam').innerText = data.sam;
+                document.getElementById('som').innerText = data.som;
+                document.getElementById('samLoc').innerText = payload.country;
+                document.getElementById('cagr').innerText = data.cagr;
+                document.getElementById('thinkingLog').innerText = data.thinking;
+
+                // 2. Populate Segmented Reddit Sentiment
+                const redditGrid = document.getElementById('redditGrid');
+                redditGrid.innerHTML = ''; // Clear the placeholder
+
+                data.reddit_breakdown.forEach(sub => {
+                    // Determine colors dynamically based on the 0-100 score
+                    let scoreColor = "text-yellow-400";
+                    let barColor = "bg-yellow-400";
+                    if (sub.score >= 70) {
+                        scoreColor = "text-green-400";
+                        barColor = "bg-green-400";
+                    } else if (sub.score <= 40) {
+                        scoreColor = "text-red-400";
+                        barColor = "bg-red-400";
+                    }
+
+                    // Create a visual card for each subreddit
+                    redditGrid.innerHTML += `
+                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-700">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-bold text-blue-300">${sub.subreddit}</span>
+                                <span class="text-xs font-bold px-2 py-1 rounded bg-slate-900 border border-slate-600">${sub.vibe}</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="text-2xl font-black ${scoreColor}">${sub.score}</div>
+                                <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full ${barColor}" style="width: ${sub.score}%"></div>
+                                </div>
+                            </div>
+                            
+                            <p class="text-xs text-slate-300 leading-relaxed">${sub.summary}</p>
+                        </div>
+                    `;
+                });
+
+                // 3. Populate Competitors Array
+                const compList = document.getElementById('competitorsList');
+                compList.innerHTML = data.competitors.map(c => `
+                    <li class="p-3 bg-slate-50 rounded border border-slate-100">
+                        <div class="font-bold text-slate-800">${c.name}</div>
+                        <div class="text-xs mt-1">${c.description}</div>
+                    </li>
+                `).join('');
+
+                // 4. Populate Patents Array
+                const patList = document.getElementById('patentsList');
+                patList.innerHTML = data.patents.map(p => `
+                    <li class="flex items-start gap-2">
+                        <i class="ph ph-file-text mt-1 text-blue-500"></i>
+                        <a href="${p.url}" target="_blank" class="text-blue-600 hover:underline truncate block w-full">${p.title}</a>
+                    </li>
+                `).join('');
+                
+                // Show the final layout
+                results.classList.remove('hidden');
+
+            } catch (err) {
+                alert("Connection Error: Is your Python server running?");
+                console.error(err);
+            } finally {
+                // Reset Button
+                btn.innerText = "Generate Market Report";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

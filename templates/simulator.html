@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VC Simulator - Live Pitch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 h-screen flex flex-col items-center justify-center p-4 font-sans" onload="init()">
+
+    <div class="w-full max-w-6xl mb-4 flex justify-between items-center">
+        <a href="/" class="text-blue-600 hover:text-blue-800 text-sm font-bold transition">&larr; Back to Estimator</a>
+        <div class="flex items-center gap-2">
+            <select id="founderSelect" onchange="loadFounderScenario()" class="p-2 rounded-lg border border-slate-300 bg-white shadow-sm font-semibold text-slate-800 outline-none">
+                <option value="">Loading founders...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="w-full max-w-6xl flex flex-col md:flex-row gap-4 h-[85vh]">
+        
+        <div class="w-full md:w-3/5 bg-slate-900 rounded-xl shadow-2xl flex flex-col overflow-hidden relative transition-all duration-500" id="presentationPanel">
+            <div class="w-full aspect-video bg-black flex items-center justify-center relative">
+                <img id="slideImage" src="" alt="Pitch Deck Slide" class="w-full h-full object-contain hidden">
+                <div id="slidePlaceholder" class="text-slate-500 text-sm">Select a founder to begin</div>
+            </div>
+            
+            <div class="bg-slate-800 p-4 flex justify-between items-center text-white flex-1">
+                <div class="flex items-center gap-4">
+                    <div id="slideCounter" class="text-xs font-bold text-slate-400 tracking-wider uppercase w-24">Slide 0 / 0</div>
+                    <div id="manualControls" class="hidden flex gap-2">
+                        <button onclick="prevSlide()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1 rounded text-sm font-bold transition">&larr; Prev</button>
+                        <button onclick="nextSlide()" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1 rounded text-sm font-bold transition">Next &rarr;</button>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button id="startPitchBtn" onclick="startPitch()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold transition hidden">Start Pitch</button>
+                    <button id="skipPitchBtn" onclick="startQA()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm font-bold transition hidden">Skip to Q&A</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full md:w-2/5 bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden relative opacity-50 pointer-events-none transition-all duration-500" id="qaPanel">
+            
+            <div class="bg-slate-100 border-b border-slate-200 p-4 flex justify-between items-center z-20">
+                <h2 class="font-bold text-slate-800 text-sm">Q&A Session</h2>
+                <div class="flex items-center gap-3">
+                    <span id="statusText" class="text-xs text-slate-400 font-mono">Waiting for pitch...</span>
+                    <div id="statusDot" class="bg-slate-300 h-2 w-2 rounded-full"></div>
+                    <button id="concludeBtn" onclick="showDecisionForm()" class="hidden bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs font-bold transition shadow-sm">Conclude & Decide</button>
+                </div>
+            </div>
+
+            <div id="chatLayer" class="flex-1 flex flex-col relative h-full">
+                <div id="chatBox" class="flex-1 p-4 overflow-y-auto space-y-4 pb-24"></div>
+                <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-white via-white to-transparent flex justify-center">
+                    <button id="recordBtn" class="bg-slate-300 text-white rounded-full h-16 w-16 flex items-center justify-center shadow-lg transition-all focus:outline-none hover:scale-105 active:scale-95">
+                        <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+                        <svg id="stopIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="decisionLayer" class="hidden absolute inset-0 mt-14 bg-white z-30 flex flex-col p-6 overflow-y-auto">
+                <h3 class="font-extrabold text-xl text-slate-900 mb-4">Investment Memo</h3>
+                
+                <label class="block text-sm font-bold text-slate-700 mb-2">Final Decision</label>
+                <div class="flex gap-4 mb-6">
+                    <label class="flex-1 border border-slate-200 rounded-lg p-4 cursor-pointer hover:bg-green-50 transition flex items-center gap-2">
+                        <input type="radio" name="decision" value="invest" class="text-green-600 focus:ring-green-500 w-4 h-4">
+                        <span class="font-bold text-slate-800">Invest</span>
+                    </label>
+                    <label class="flex-1 border border-slate-200 rounded-lg p-4 cursor-pointer hover:bg-red-50 transition flex items-center gap-2">
+                        <input type="radio" name="decision" value="pass" checked class="text-red-600 focus:ring-red-500 w-4 h-4">
+                        <span class="font-bold text-slate-800">Pass</span>
+                    </label>
+                </div>
+
+                <label class="block text-sm font-bold text-slate-700 mb-2">Investment Thesis / Risks Identified</label>
+                <textarea id="thesisInput" rows="6" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 mb-6" placeholder="Explain your reasoning. What did you like? What red flags did you find?"></textarea>
+
+                <div class="flex gap-2">
+                    <button onclick="hideDecisionForm()" class="px-4 py-3 rounded-lg font-bold text-slate-600 hover:bg-slate-100 transition">Cancel</button>
+                    <button id="submitDebriefBtn" onclick="submitDebrief()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-bold transition shadow-md">Submit to Managing Partner</button>
+                </div>
+            </div>
+
+            <div id="reportLayer" class="hidden absolute inset-0 mt-14 bg-slate-900 z-40 flex flex-col p-6 overflow-y-auto text-white">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-black text-2xl tracking-tight text-white">Partner Review</h3>
+                    <div class="text-center bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
+                        <div class="text-xs text-slate-400 font-bold uppercase">Analyst Score</div>
+                        <div id="reportScore" class="text-2xl font-black text-purple-400">--/100</div>
+                    </div>
+                </div>
+
+                <p id="reportSummary" class="text-slate-300 text-sm leading-relaxed mb-6 bg-slate-800 p-4 rounded-lg border border-slate-700">
+                    Loading feedback...
+                </p>
+
+                <h4 class="font-bold text-green-400 text-sm uppercase tracking-wider mb-2">Flaws Uncovered</h4>
+                <ul id="flawsFoundList" class="list-disc pl-5 text-sm text-slate-300 mb-6 space-y-1"></ul>
+
+                <h4 class="font-bold text-red-400 text-sm uppercase tracking-wider mb-2">Critical Misses</h4>
+                <ul id="flawsMissedList" class="list-disc pl-5 text-sm text-slate-300 mb-6 space-y-1"></ul>
+                
+                <button onclick="location.reload()" class="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-3 rounded-lg font-bold transition mt-auto">Start New Simulation</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Core Variables
+        let currentFounderId = "";
+        let founderData = null;
+        let conversationHistory = [];
+        let currentSlideIndex = 0;
+        let isPitching = false;
+        let currentAudio = null;
+        let audioCache = {};
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        async function init() {
+            const response = await fetch('/api/founders');
+            const data = await response.json();
+            const select = document.getElementById('founderSelect');
+            select.innerHTML = '<option value="">-- Choose Startup --</option>'; 
+            data.founders.forEach(f => {
+                const option = document.createElement('option');
+                option.value = f.id;
+                option.text = `${f.name} (${f.company})`;
+                select.appendChild(option);
+            });
+            setupMicrophone();
+        }
+
+        async function loadFounderScenario() {
+            currentFounderId = document.getElementById('founderSelect').value;
+            if (!currentFounderId) return;
+
+            if (currentAudio) currentAudio.pause();
+            isPitching = false;
+            audioCache = {};
+
+            const response = await fetch(`/api/founder/${currentFounderId}`);
+            founderData = await response.json();
+
+            // Reset UI
+            document.getElementById('qaPanel').classList.add('opacity-50', 'pointer-events-none');
+            document.getElementById('slidePlaceholder').classList.add('hidden');
+            document.getElementById('slideImage').classList.remove('hidden');
+            document.getElementById('chatBox').innerHTML = '';
+            document.getElementById('manualControls').classList.add('hidden');
+            document.getElementById('concludeBtn').classList.add('hidden');
+            document.getElementById('decisionLayer').classList.add('hidden');
+            document.getElementById('reportLayer').classList.add('hidden');
+            
+            if (founderData.pitch_deck && founderData.pitch_deck.length > 0) {
+                currentSlideIndex = 0;
+                preloadImages();
+                updateSlideVisuals();
+                document.getElementById('startPitchBtn').classList.remove('hidden');
+                document.getElementById('skipPitchBtn').classList.remove('hidden');
+                document.getElementById('startPitchBtn').innerText = "Start Pitch";
+                document.getElementById('startPitchBtn').disabled = false;
+            }
+        }
+
+        function preloadImages() {
+            founderData.pitch_deck.forEach(slide => {
+                const img = new Image();
+                img.src = slide.slide_image;
+            });
+        }
+
+        function updateSlideVisuals() {
+            if (!founderData || !founderData.pitch_deck) return;
+            const slide = founderData.pitch_deck[currentSlideIndex];
+            document.getElementById('slideImage').src = slide.slide_image;
+            document.getElementById('slideCounter').innerText = `Slide ${currentSlideIndex + 1} / ${founderData.pitch_deck.length}`;
+        }
+
+        function prevSlide() { if (currentSlideIndex > 0) { currentSlideIndex--; updateSlideVisuals(); } }
+        function nextSlide() { if (currentSlideIndex < founderData.pitch_deck.length - 1) { currentSlideIndex++; updateSlideVisuals(); } }
+
+        async function fetchAudioForSlide(index) {
+            if (audioCache[index] || index >= founderData.pitch_deck.length) return;
+            const slide = founderData.pitch_deck[index];
+            try {
+                const response = await fetch('/generate-tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: slide.script, founder_id: currentFounderId })
+                });
+                const data = await response.json();
+                audioCache[index] = "data:audio/mp3;base64," + data.audio_base64;
+            } catch (err) { console.error(`Failed to pre-fetch`, err); }
+        }
+
+        async function startPitch() {
+            if (isPitching) return;
+            isPitching = true;
+            document.getElementById('startPitchBtn').innerText = "Loading...";
+            document.getElementById('startPitchBtn').disabled = true;
+            document.getElementById('skipPitchBtn').classList.add('hidden');
+            await fetchAudioForSlide(0); 
+            playSlide();
+        }
+
+        async function playSlide() {
+            if (!isPitching || currentSlideIndex >= founderData.pitch_deck.length) {
+                startQA(); 
+                return;
+            }
+            updateSlideVisuals();
+            if (!audioCache[currentSlideIndex]) {
+                document.getElementById('startPitchBtn').innerText = "Buffering...";
+                await fetchAudioForSlide(currentSlideIndex);
+            }
+            document.getElementById('startPitchBtn').innerText = "Pitching...";
+            currentAudio = new Audio(audioCache[currentSlideIndex]);
+            fetchAudioForSlide(currentSlideIndex + 1);
+
+            currentAudio.onended = () => {
+                setTimeout(() => {
+                    if (isPitching) { currentSlideIndex++; playSlide(); }
+                }, 1500); 
+            };
+            currentAudio.play();
+        }
+
+        function startQA() {
+            isPitching = false;
+            if (currentAudio) currentAudio.pause();
+            
+            document.getElementById('startPitchBtn').classList.add('hidden');
+            document.getElementById('skipPitchBtn').classList.add('hidden');
+            document.getElementById('manualControls').classList.remove('hidden');
+            
+            const qaPanel = document.getElementById('qaPanel');
+            qaPanel.classList.remove('opacity-50', 'pointer-events-none');
+            
+            document.getElementById('recordBtn').classList.replace('bg-slate-300', 'bg-blue-600');
+            document.getElementById('recordBtn').classList.add('hover:bg-blue-700', 'shadow-blue-300');
+            
+            document.getElementById('statusText').innerText = "Standby";
+            document.getElementById('statusDot').classList.replace('bg-slate-300', 'bg-slate-500');
+            document.getElementById('concludeBtn').classList.remove('hidden'); // Show Decision Button
+
+            const pitchScript = founderData.pitch_deck ? founderData.pitch_deck.map(s => s.script).join(" ") : "";
+            conversationHistory = [
+                {"role": "assistant", "content": `(I just presented my deck. I said: "${pitchScript}". Waiting for questions.)`}
+            ];
+            
+            document.getElementById('chatBox').innerHTML = `
+                <div class="text-center text-xs text-slate-400 font-bold my-4 uppercase tracking-widest border-b border-slate-200 pb-2">
+                    Pitch Concluded. Floor is open for Q&A.
+                </div>
+            `;
+        }
+
+        // --- Voice Logic (Same as before) ---
+        async function setupMicrophone() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+            mediaRecorder.onstop = sendAudioToServer;
+            document.getElementById('recordBtn').addEventListener('click', () => { isRecording ? stopRecording() : startRecording(); });
+        }
+
+        function startRecording() {
+            if (!mediaRecorder || mediaRecorder.state === 'recording') return;
+            audioChunks = []; mediaRecorder.start(); isRecording = true;
+            document.getElementById('statusText').innerText = "Recording...";
+            document.getElementById('statusDot').className = "bg-red-500 h-2 w-2 rounded-full animate-pulse";
+            const btn = document.getElementById('recordBtn');
+            btn.classList.replace('bg-blue-600', 'bg-red-500');
+            btn.classList.replace('hover:bg-blue-700', 'hover:bg-red-600');
+            btn.classList.add('animate-pulse');
+            document.getElementById('micIcon').classList.add('hidden');
+            document.getElementById('stopIcon').classList.remove('hidden');
+        }
+
+        function stopRecording() {
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+            mediaRecorder.stop(); isRecording = false;
+            document.getElementById('statusText').innerText = "Transcribing...";
+            document.getElementById('statusDot').className = "bg-yellow-500 h-2 w-2 rounded-full animate-pulse";
+            const btn = document.getElementById('recordBtn');
+            btn.classList.replace('bg-red-500', 'bg-blue-600');
+            btn.classList.replace('hover:bg-red-600', 'hover:bg-blue-700');
+            btn.classList.remove('animate-pulse');
+            btn.disabled = true; 
+            document.getElementById('micIcon').classList.remove('hidden');
+            document.getElementById('stopIcon').classList.add('hidden');
+        }
+
+        async function sendAudioToServer() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append("audio", audioBlob, "recording.webm");
+            formData.append("founder_id", currentFounderId);
+            formData.append("messages", JSON.stringify(conversationHistory));
+
+            try {
+                const response = await fetch('/voice-chat', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                const chatBox = document.getElementById('chatBox');
+                chatBox.innerHTML += `<div class="flex justify-end mt-4"><div class="bg-blue-600 text-white p-3 rounded-xl text-sm max-w-[85%] shadow-md leading-relaxed">${data.user_text}</div></div>`;
+                conversationHistory.push({"role": "user", "content": data.user_text});
+
+                document.getElementById('statusText').innerText = "Founder Speaking...";
+                document.getElementById('statusDot').className = "bg-green-500 h-2 w-2 rounded-full";
+                
+                const audio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+                audio.play();
+
+                chatBox.innerHTML += `<div class="flex justify-start mt-4"><div class="bg-white border border-slate-200 text-slate-800 p-3 rounded-xl text-sm max-w-[85%] shadow-sm leading-relaxed">${data.reply}</div></div>`;
+                conversationHistory.push({"role": "assistant", "content": data.reply});
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                audio.onended = () => {
+                    document.getElementById('statusText').innerText = "Standby";
+                    document.getElementById('statusDot').className = "bg-slate-500 h-2 w-2 rounded-full";
+                    document.getElementById('recordBtn').disabled = false;
+                };
+            } catch (err) {
+                console.error(err);
+                document.getElementById('statusText').innerText = "Error";
+                document.getElementById('statusDot').className = "bg-red-500 h-2 w-2 rounded-full";
+                document.getElementById('recordBtn').disabled = false;
+            }
+        }
+
+        // ==========================================
+        // DEBRIEF LOGIC (NEW)
+        // ==========================================
+        function showDecisionForm() {
+            document.getElementById('decisionLayer').classList.remove('hidden');
+        }
+
+        function hideDecisionForm() {
+            document.getElementById('decisionLayer').classList.add('hidden');
+        }
+
+        async function submitDebrief() {
+            const decision = document.querySelector('input[name="decision"]:checked').value;
+            const thesis = document.getElementById('thesisInput').value;
+            const btn = document.getElementById('submitDebriefBtn');
+            
+            if (!thesis) {
+                alert("Please write a thesis before submitting.");
+                return;
+            }
+
+            btn.innerText = "Analyzing Transcript...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/debrief', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        founder_id: currentFounderId,
+                        history: conversationHistory,
+                        decision: decision,
+                        thesis: thesis
+                    })
+                });
+
+                const report = await response.json();
+                
+                // Populate the Report UI
+                document.getElementById('reportScore').innerText = `${report.score}/100`;
+                document.getElementById('reportSummary').innerText = report.feedback_summary;
+                
+                document.getElementById('flawsFoundList').innerHTML = report.flaws_found.length > 0 
+                    ? report.flaws_found.map(f => `<li>${f}</li>`).join('')
+                    : `<li><em>No critical flaws uncovered.</em></li>`;
+                    
+                document.getElementById('flawsMissedList').innerHTML = report.flaws_missed.length > 0 
+                    ? report.flaws_missed.map(f => `<li>${f}</li>`).join('')
+                    : `<li><em>Excellent work. You found all major risks.</em></li>`;
+
+                // Switch to Report View
+                document.getElementById('decisionLayer').classList.add('hidden');
+                document.getElementById('reportLayer').classList.remove('hidden');
+
+            } catch (err) {
+                console.error(err);
+                alert("Error generating debrief.");
+                btn.innerText = "Submit to Managing Partner";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
